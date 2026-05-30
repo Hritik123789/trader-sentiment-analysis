@@ -349,6 +349,8 @@ def main():
                 
                 classification = classify_uploaded_trader(uploaded_df, filtered_daily)
                 
+                st.success(f"✅ Successfully analyzed {len(uploaded_df):,} trades!")
+                
                 st.markdown(f"### Your Archetype: **{classification['archetype']}**")
                 st.markdown(f"*{classification['description']}*")
                 
@@ -364,17 +366,29 @@ def main():
                 with col3:
                     st.metric("Avg Position", f"{classification['avg_position_size']:.2f}")
                 
-                st.markdown("#### Characteristics")
+                st.markdown("#### 📋 Characteristics")
                 for char in classification['characteristics']:
                     st.markdown(f"- {char}")
                 
-                st.markdown("#### Recommended Strategy")
+                st.markdown("#### 💡 Recommended Strategy")
                 st.info(classification['strategy'])
                 
                 st.markdown(f"**Risk Profile:** {classification['risk_profile']}")
                 
             except Exception as e:
-                st.error(f"Error processing uploaded file: {str(e)}")
+                st.error(f"❌ Error processing uploaded file: {str(e)}")
+                st.info("""
+                **Required CSV format:**
+                - Columns: `account`, `timestamp`, `coin`, `direction`, `px`, `sz`, `closedPnl`, `fee`
+                - Or: `Account`, `Timestamp`, `Coin`, `Side`, `Execution Price`, `Size Tokens`, `Closed PnL`, `Fee`
+                """)
+        else:
+            st.info("""
+            📤 **Upload your trades CSV** in the sidebar to:
+            - Get classified into one of 4 trader archetypes
+            - Compare your performance against 32 reference traders
+            - Receive personalized strategy recommendations
+            """)
     
     # Strategy Recommendations Section
     st.markdown("---")
@@ -436,13 +450,16 @@ def main():
     st.markdown("---")
     st.header("🤖 AI Analyst — Powered by AWS Bedrock")
     
-    # Initialize session state for chat
+    # Initialize session state
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
     
     if 'data_summary' not in st.session_state:
         with st.spinner("Generating data summary for AI..."):
             st.session_state.data_summary = statistical_summary(filtered_daily)
+    
+    if 'selected_question' not in st.session_state:
+        st.session_state.selected_question = ""
     
     # Test connection button
     if st.button("🔌 Test AWS Bedrock Connection"):
@@ -454,26 +471,35 @@ def main():
                 st.error(message)
     
     # Suggested questions
-    st.markdown("#### Suggested Questions")
+    st.markdown("#### Suggested Questions (Click to Ask)")
     suggested = get_suggested_questions()
     
     cols = st.columns(2)
     for idx, question in enumerate(suggested[:10]):
         col_idx = idx % 2
         with cols[col_idx]:
-            if st.button(question, key=f"suggest_{idx}"):
-                st.session_state.current_question = question
+            if st.button(question, key=f"suggest_{idx}", use_container_width=True):
+                # Directly ask the question when button is clicked
+                with st.spinner("AI is thinking..."):
+                    answer, updated_history = ask_bedrock(
+                        question,
+                        st.session_state.data_summary,
+                        st.session_state.chat_history
+                    )
+                    st.session_state.chat_history = updated_history
+                st.rerun()
     
-    # Chat interface
-    st.markdown("#### Ask the AI Analyst")
+    # Chat interface for custom questions
+    st.markdown("---")
+    st.markdown("#### Or Ask Your Own Question")
     
     user_question = st.text_input(
-        "Your question:",
-        value=st.session_state.get('current_question', ''),
+        "Type your question:",
+        placeholder="e.g., What's the best strategy for today's sentiment?",
         key="user_input"
     )
     
-    if st.button("Ask") and user_question:
+    if st.button("💬 Ask", type="primary") and user_question:
         with st.spinner("AI is thinking..."):
             answer, updated_history = ask_bedrock(
                 user_question,
@@ -481,10 +507,7 @@ def main():
                 st.session_state.chat_history
             )
             st.session_state.chat_history = updated_history
-        
-        # Clear the current question
-        if 'current_question' in st.session_state:
-            del st.session_state.current_question
+        st.rerun()
     
     # Display chat history
     if st.session_state.chat_history:
