@@ -2,6 +2,8 @@
 
 A full-stack interactive web application that analyzes cryptocurrency trading performance against the Bitcoin Fear & Greed Index, powered by AWS Bedrock AI.
 
+**🚀 [Live Demo](https://trader-sentiment-analysis-hk.streamlit.app/)**
+
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-red.svg)
 ![AWS](https://img.shields.io/badge/AWS-Bedrock-orange.svg)
