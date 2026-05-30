@@ -32,10 +32,20 @@ def get_bedrock_client():
         Exception if AWS credentials not configured
     """
     try:
-        # Try environment variables first
-        aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
-        aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-        aws_region = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
+        # Try Streamlit secrets first (for deployment)
+        try:
+            import streamlit as st
+            if hasattr(st, 'secrets') and 'AWS_ACCESS_KEY_ID' in st.secrets:
+                aws_access_key = st.secrets['AWS_ACCESS_KEY_ID']
+                aws_secret_key = st.secrets['AWS_SECRET_ACCESS_KEY']
+                aws_region = st.secrets.get('AWS_DEFAULT_REGION', 'us-east-1')
+            else:
+                raise KeyError("Not in Streamlit Cloud")
+        except (ImportError, KeyError):
+            # Fall back to environment variables (for local development)
+            aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
+            aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+            aws_region = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
         
         if aws_access_key and aws_secret_key:
             client = boto3.client(

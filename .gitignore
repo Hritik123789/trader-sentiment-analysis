@@ -21,3 +21,6 @@ Thumbs.db
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Personal interview prep (not for public)
+INTERVIEW_GUIDE.md
